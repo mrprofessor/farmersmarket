@@ -31,6 +31,8 @@ could reuse some of that logic.
             id name code price
         - Table Coupon
             id name description
+        - Table BasketItem
+            id product_id coupon_id discount
 
     3. The marketservice application will have all the rules and logic to 
         calulate the final price of each product and hence all products.
