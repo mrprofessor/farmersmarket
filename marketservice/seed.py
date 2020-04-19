@@ -1,46 +1,54 @@
 products = [
-    {
-        "name": "Chai",
-        "code": "CH1",
-        "price": 3.11
-    },
-    {
-        "name": "Apples",
-        "code": "AP1",
-        "price": 6.00
-    },
-    {
-        "name": "Coffee",
-        "code": "CF1",
-        "price": 11.23
-    },
-    {
-        "name": "Milk",
-        "code": "MK1",
-        "price": 4.75
-    },
-    {
-        "name": "Oatmeal",
-        "code": "OM1",
-        "price": 3.69
-    },
+    {"name": "Chai", "code": "CH1", "price": 3.11},
+    {"name": "Apples", "code": "AP1", "price": 6.00},
+    {"name": "Coffee", "code": "CF1", "price": 11.23},
+    {"name": "Milk", "code": "MK1", "price": 4.75},
+    {"name": "Oatmeal", "code": "OM1", "price": 3.69},
 ]
 
 coupons = [
     {
         "name": "BOGO",
-        "description": "Buy-One-Get-One-Free Special on Coffee. (Unlimited)"
+        "description": "Buy-One-Get-One-Free Special on Coffee. (Unlimited)",
+        "target": "CF1",
+        "apply_on": "CF1",
+        "discount": 100,
+        "discount_type": "percent",
+        "trigger_limit": 1,
+        "limit": 0,
+        "apply_all": False,
     },
     {
         "name": "APPL",
-        "description": "If you buy 3 or more bags of Apples, the price drops to $4.50."
-    },
-    {
-        "name": "CHMK",
-        "description": "Purchase a box of Chai and get milk free. (Limit 1)"
+        "description": "If you buy 3 or more bags of Apples, the price drops to $4.50.",
+        "target": "AP1",
+        "apply_on": "AP1",
+        "discount": 4.5,
+        "discount_type": "fixed",
+        "trigger_limit": 3,
+        "limit": 0,
+        "apply_all": True,
     },
     {
         "name": "APOM",
-        "description": "Purchase a bag of Oatmeal and get 50 percent off a bag of Apples"
+        "description": "Purchase a bag of Oatmeal and get 50% off a bag of Apples",
+        "target": "OM1",
+        "apply_on": "AP1",
+        "discount": 50,
+        "discount_type": "percent",
+        "trigger_limit": 1,
+        "limit": 0,
+        "apply_all": False,
+    },
+    {
+        "name": "CHMK",
+        "description": "Purchase a box of Chai and get milk free. (Limit 1)",
+        "target": "CH1",
+        "apply_on": "MK1",
+        "discount": 100,
+        "discount_type": "percent",
+        "trigger_limit": 1,
+        "limit": 1,
+        "apply_all": False,
     },
 ]

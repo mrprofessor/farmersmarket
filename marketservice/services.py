@@ -4,15 +4,14 @@ from .seed import products as products_seed, coupons as coupons_seed
 
 
 class MarketService:
-    def __init__(self):
-        self.product_list, self.coupon_list = self.seed()
-        self.basket = None
+    def __init__(self, product_list: List[Product], coupon_list: List[Coupon]):
+        self.product_list = product_list
+        self.coupon_list = coupon_list
 
-    def seed(self):
-        """ Create a list of products and coupons """
-        product_list = [Product(**item) for item in products_seed]
-        coupon_list = [Coupon(**item) for item in coupons_seed]
-        return product_list, coupon_list
+    def checkout(self, basket_items: List[str]):
+        basket = self.build_basket(basket_items)
+        self.apply_coupons(basket)
+        return basket
 
     def build_basket(self, basket_items: List[str]):
         """ Create the cart from the input list of items """
@@ -22,142 +21,71 @@ class MarketService:
                 key="code", value=b_item, search_list=self.product_list
             )
             b_items.append(BasketItem(product=relevant_product))
-        self.basket = Basket(items=b_items)
+        basket = Basket(items=b_items)
+        return basket
 
-    def calculate_invoice(self):
-        """ Calculate the final invoice """
-        if not self.basket:
-            print("No items yet")
-            return
-        total = 0.00
-        for item in self.basket.basket_items:
-            print(item.product.code, "\t\t", item.product.price)
-            total += item.product.price
-            if item.coupon:
-                print("\t", item.coupon.name, "\t", -item.discount)
-                total -= item.discount
-        print("Total: ", "\t", total)
-
-    def apply_coupons(self):
+    def apply_coupons(self, basket: Basket):
         """ Apply all the coupons on the basket """
         for coupon in self.coupon_list:
-            if coupon.name == "BOGO":
-                self.apply_bogo(coupon)
-            if coupon.name == "APPL":
-                self.apply_appl(coupon)
-            if coupon.name == "CHMK":
-                self.apply_chmk(coupon)
-            if coupon.name == "APOM":
-                self.apply_apom(coupon)
+            # Target products with no coupons applied to them
+            target_products_without_discount = [
+                b_item
+                for b_item in basket.basket_items
+                if b_item.product.code == coupon.target and b_item.should_apply
+            ]
 
-    def apply_apom(self, coupon_obj):
-        """
-            Apply APOM coupon
-            description: Purchase a bag of Oatmeal and get 50% off a bag of Apples
-        """
-        apples_without_coupons = [
-            item
-            for item in self.basket.basket_items
-            if item.product.code == "AP1" and item.should_apply
-        ]
+            # Check whether the products satisfies the trigger limit of the
+            # coupon
+            if len(target_products_without_discount) < coupon.trigger_limit:
+                continue
 
-        for item in self.basket.basket_items:
-            # set the coupon should_apply flag false
-            if item.product.code == "OM1" and item.should_apply:
-                item.should_apply = False
+            if coupon.apply_all:
+                for item in basket.basket_items:
+                    if item.product.code == coupon.apply_on:
+                        item.should_apply = False
+                        item.coupon = coupon
+                        item.discount = MarketService.calculate_discount_amount(
+                            initial_price=item.product.price,
+                            discount_type=coupon.discount_type,
+                            number=coupon.discount,
+                        )
+            else:
+                # Register a counter for limit
+                applied_counter = 0
 
-                # Add discount to the apple
-                discounted_apple = apples_without_coupons.pop()
-                discounted_apple.should_apply = False
-                discounted_apple.coupon = coupon_obj
-                discounted_apple.discount = MarketService.calculate_discount_amount(
-                    initial_price=discounted_apple.product.price,
-                    discount_type="percent",
-                    number=50,
-                )
+                # Applicable products with no coupons applied to them
+                applicable_products_without_discount = [
+                    b_item
+                    for b_item in basket.basket_items
+                    if b_item.product.code == coupon.apply_on and b_item.should_apply
+                ]
 
-    def apply_chmk(self, coupon_obj):
-        """
-            Apply CHMK coupon
-            description: Purchase a box of Chai and get milk free. (Limit 1).
-        """
-        milks = [
-            item
-            for item in self.basket.basket_items
-            if item.product.code == "MK1" and item.should_apply
-        ]
-        if not len(milks):
-            return
+                # Iterate and apply
+                for item in basket.basket_items:
+                    # Set the item should_apply flag false
+                    if item.product.code == coupon.target and item.should_apply:
+                        item.should_apply = False
+                        applied_counter += 1
+                        # Remove from the applicable products if target and
+                        # applicable are the same product
+                        if coupon.target == coupon.apply_on:
+                            applicable_products_without_discount.remove(item)
 
-        # Set flag to check if once applied already
-        once_applied = False
-        for item in self.basket.basket_items:
-            # set the coupon should_apply flag false
-            if item.product.code == "CH1" and item.should_apply and not once_applied:
-                item.should_apply = False
-                once_applied = True
+                        # Add discount to the product
+                        if applicable_products_without_discount:
+                            discounted_product = (
+                                applicable_products_without_discount.pop()
+                            )
+                            discounted_product.should_apply = False
+                            discounted_product.coupon = coupon
+                            discounted_product.discount = MarketService.calculate_discount_amount(
+                                initial_price=discounted_product.product.price,
+                                discount_type=coupon.discount_type,
+                                number=coupon.discount,
+                            )
 
-                # Add discount to the apple
-                discounted_milk = milks.pop()
-                discounted_milk.should_apply = False
-                discounted_milk.coupon = coupon_obj
-                discounted_milk.discount = MarketService.calculate_discount_amount(
-                    initial_price=discounted_milk.product.price,
-                    discount_type="percent",
-                    number=100,
-                )
-            elif item.product.code == "CH1" and once_applied:
-                item.should_apply = False
-
-    def apply_appl(self, coupon_obj):
-        """
-            Apply APPL coupon
-            description: If you buy 3 or more bags of Apples, the price drops to $4.50.
-        """
-        apples = [
-            item for item in self.basket.basket_items if item.product.code == "AP1"
-        ]
-        # If there are less than 3 apples then the coupon doesn't apply
-        if len(apples) < 3:
-            return
-
-        # TODO
-        # Optimize later
-        for item in self.basket.basket_items:
-            # set the coupon should_apply flag false
-            if item.product.code == "AP1" and item.should_apply:
-                item.should_apply = False
-                item.coupon = coupon_obj
-                item.discount = MarketService.calculate_discount_amount(
-                    initial_price=item.product.price, discount_type="fixed", number=4.50
-                )
-
-    def apply_bogo(self, coupon_obj):
-        """
-            Apply BOGO coupon
-            description: Buy-One-Get-One-Free Special on Coffee. (Unlimited)
-        """
-        coffees_without_discount = [
-            item
-            for item in self.basket.basket_items
-            if item.product.code == "CF1" and item.should_apply
-        ]
-        if not len(coffees_without_discount):
-            return
-        for item in self.basket.basket_items:
-            # set the coupon should_apply flag false
-            if item.product.code == "CF1" and item.should_apply:
-                item.should_apply = False
-
-                # Add discount to coffees
-                discounted_coffee = coffees_without_discount.pop()
-                discounted_coffee.should_apply = False
-                discounted_coffee.coupon = coupon_obj
-                discounted_coffee.discount = MarketService.calculate_discount_amount(
-                    initial_price=discounted_coffee.product.price,
-                    discount_type="percent",
-                    number=100,
-                )
+                    if coupon.limit > 0 and applied_counter == coupon.limit:
+                        break
 
     @staticmethod
     def calculate_discount_amount(
@@ -175,45 +103,24 @@ class MarketService:
                 return item
         return None
 
-
-ms = MarketService()
-# ms.build_basket(basket_items=["CF1", "CH1", "AP1", "AP1", "AP1", "MK1"])
-# ms.build_basket(basket_items=["CF1", "CF1", "CF1", "AP1"])
-# ms.build_basket(basket_items=["CF1", "CH1", "CH1", "AP1"])
-# ms.build_basket(basket_items=["CF1", "CH1", "CH1", "AP1", "OM1"])
-
-# 1.
-# ms.build_basket(basket_items=["CH1", "AP1", "CF1", "MK1"])
-# 2.
-# ms.build_basket(basket_items=["MK1", "AP1"])
-# 3.
-# ms.build_basket(basket_items=["CF1", "CF1"])
-# 4.
-ms.build_basket(basket_items=["AP1", "AP1", "CH1", "AP1"])
-ms.apply_coupons()
-ms.calculate_invoice()
+    # FIXME
+    # remove the function
+    # def calculate_invoice(self, basket: Basket):
+    #     """ Calculate the final invoice """
+    #     if not basket:
+    #         print("No items yet")
+    #         return
+    #     for item in basket.basket_items:
+    #         print(item.product.code, "\t\t", "{:.2f}".format(item.product.price))
+    #         if item.coupon:
+    #             print("\t", item.coupon.name, "\t", "{:.2f}".format(-item.discount))
+    #     print("Total: ", "\t", "{:.2f}".format(basket.total()))
 
 
 """
-
-
-```
-Basket: CH1, AP1, CF1, MK1
-Total price expected: $20.34
-```
-
-```
-Basket: MK1, AP1
-Total price expected: $10.75
-```
-
-```
-Basket: CF1, CF1
-Total price expected: $11.23
-```
-
-```
-Basket: AP1, AP1, CH1, AP1
-Total price expected: $16.61
-```
+testcases
+ms.build_basket(basket_items=["CF1", "CF1", "CF1", "CF1", "CF1"])
+ms.build_basket(basket_items=["AP1", "AP1", "OM1", "AP1", "OM1"])
+ms.build_basket(basket_items=["AP1", "AP1", "OM1", "AP1", "OM1", "CF1", "CF1"])
+ms.build_basket(basket_items=["CH1", "MK1", "MK1", "CH1"])
 """
