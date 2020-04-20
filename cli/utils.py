@@ -17,9 +17,6 @@ def print_basket(marketservice_obj, basket_items):
     """ Checkout and print basket """
     basket = marketservice_obj.checkout(basket_items)
 
-    if not basket:
-        return "No items yet"
-
     output_str = f"Item \t\t  Price\n"
     output_str += f"---- \t\t  -----\n"
     for item in basket.basket_items:
@@ -29,6 +26,5 @@ def print_basket(marketservice_obj, basket_items):
 
     output_str += f"------------------------\n"
     output_str += f"Total: \t\t  {basket.total()}"
-    # print("Total: ", "\t", "{:.2f}".format(basket.total()))
 
     return output_str

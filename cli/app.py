@@ -12,10 +12,10 @@ from .utils import validate_products, print_basket
     prompt="Enter product codes",
     help="List of space separated product codes in the basket",
 )
-@click.pass_context
-def cli(ctx, products):
+def cli(products):
+    marketservice = seed_data()
     product_list = [product for product in products.split(" ") if product != ""]
-    non_existent_products = validate_products(product_list, ctx.obj["marketservice"])
+    non_existent_products = validate_products(product_list, marketservice)
     if non_existent_products:
         click.secho(
             f"Invalid product codes: {non_existent_products}\nExiting program!",
@@ -25,17 +25,12 @@ def cli(ctx, products):
         )
         return
 
-    basket = print_basket(ctx.obj["marketservice"], product_list)
+    basket = print_basket(marketservice, product_list)
     click.secho(basket, fg="green", bold=True)
 
 
 def seed_data():
+    """ Seed the products and coupons from the seed.py """
     product_list = [Product(**item) for item in products_seed]
     coupon_list = [Coupon(**item) for item in coupons_seed]
     return MarketService(product_list, coupon_list)
-
-
-def main():
-    # click.clear()
-    marketservice = seed_data()
-    cli(obj={"marketservice": marketservice})

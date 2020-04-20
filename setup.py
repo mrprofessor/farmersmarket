@@ -10,6 +10,6 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        farmersmarket=cli.app:main
+        farmersmarket=cli.app:cli
     ''',
 )
