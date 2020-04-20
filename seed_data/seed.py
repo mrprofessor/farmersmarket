@@ -52,3 +52,4 @@ coupons = [
         "apply_all": False,
     },
 ]
+

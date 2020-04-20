@@ -5,15 +5,11 @@ from cli.app import cli
 
 from marketservice.services import MarketService
 from marketservice.models import Product, Coupon
-from marketservice.seed import products as products_seed, coupons as coupons_seed
 
 
 class TestCliIntegration(TestCase):
     def setUp(self):
         pass
-        # self.product_list = [Product(**item) for item in products_seed]
-        # self.coupon_list = [Coupon(**item) for item in coupons_seed]
-        # self.market_service = MarketService(self.product_list, self.coupon_list)
 
     def tearDown(self):
         pass

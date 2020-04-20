@@ -1,7 +1,7 @@
 from unittest import TestCase
 from marketservice.services import MarketService
 from marketservice.models import Product, Coupon
-from marketservice.seed import products as products_seed, coupons as coupons_seed
+from seed_data.seed import products as products_seed, coupons as coupons_seed
 
 
 class TestMarketServiceIntegration(TestCase):

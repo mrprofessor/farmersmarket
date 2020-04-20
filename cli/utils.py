@@ -1,11 +1,7 @@
-from marketservice.seed import products
-
-
 def validate_products(input_product_list, marketservice_obj):
     """ Identify products that are not in seed """
 
     acutal_product_list = [product.code for product in marketservice_obj.product_list]
-
     non_existent_products = [
         item for item in input_product_list if item not in acutal_product_list
     ]
@@ -15,8 +11,8 @@ def validate_products(input_product_list, marketservice_obj):
 
 def print_basket(marketservice_obj, basket_items):
     """ Checkout and print basket """
-    basket = marketservice_obj.checkout(basket_items)
 
+    basket = marketservice_obj.checkout(basket_items)
     output_str = f"Item \t\t  Price\n"
     output_str += f"---- \t\t  -----\n"
     for item in basket.basket_items:

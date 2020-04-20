@@ -1,6 +1,5 @@
 from typing import List
 from .models import Product, Coupon, BasketItem, Basket
-from .seed import products as products_seed, coupons as coupons_seed
 
 
 class MarketService:
@@ -38,54 +37,61 @@ class MarketService:
             # coupon
             if len(target_products_without_discount) < coupon.trigger_limit:
                 continue
-
             if coupon.apply_all:
-                for item in basket.basket_items:
-                    if item.product.code == coupon.apply_on:
-                        item.should_apply = False
-                        item.coupon = coupon
-                        item.discount = MarketService.calculate_discount_amount(
-                            initial_price=item.product.price,
-                            discount_type=coupon.discount_type,
-                            number=coupon.discount,
-                        )
+                self.__apply_on_all(coupon, basket)
             else:
-                # Register a counter for limit
-                applied_counter = 0
+                self.__appply_with_conditions(coupon, basket)
 
-                # Applicable products with no coupons applied to them
-                applicable_products_without_discount = [
-                    b_item
-                    for b_item in basket.basket_items
-                    if b_item.product.code == coupon.apply_on and b_item.should_apply
-                ]
+    def __apply_on_all(self, coupon: Coupon, basket: Basket):
+        """ Apply on all the items """
 
-                # Iterate and apply
-                for item in basket.basket_items:
-                    # Set the item should_apply flag false
-                    if item.product.code == coupon.target and item.should_apply:
-                        item.should_apply = False
-                        applied_counter += 1
-                        # Remove from the applicable products if target and
-                        # applicable are the same product
-                        if coupon.target == coupon.apply_on:
-                            applicable_products_without_discount.remove(item)
+        if coupon.apply_all:
+            for item in basket.basket_items:
+                if item.product.code == coupon.apply_on:
+                    item.should_apply = False
+                    item.coupon = coupon
+                    item.discount = MarketService.calculate_discount_amount(
+                        initial_price=item.product.price,
+                        discount_type=coupon.discount_type,
+                        number=coupon.discount,
+                    )
 
-                        # Add discount to the product
-                        if applicable_products_without_discount:
-                            discounted_product = (
-                                applicable_products_without_discount.pop()
-                            )
-                            discounted_product.should_apply = False
-                            discounted_product.coupon = coupon
-                            discounted_product.discount = MarketService.calculate_discount_amount(
-                                initial_price=discounted_product.product.price,
-                                discount_type=coupon.discount_type,
-                                number=coupon.discount,
-                            )
+    def __appply_with_conditions(self, coupon: Coupon, basket: Basket):
+        """ Apply on items that satisfy the conditions such as limit """
 
-                    if coupon.limit > 0 and applied_counter == coupon.limit:
-                        break
+        # Register a counter for limit
+        applied_counter = 0
+        # Applicable products with no coupons applied to them
+        applicable_products_without_discount = [
+            b_item
+            for b_item in basket.basket_items
+            if b_item.product.code == coupon.apply_on and b_item.should_apply
+        ]
+
+        # Iterate and apply
+        for item in basket.basket_items:
+            # Set the item should_apply flag false
+            if item.product.code == coupon.target and item.should_apply:
+                item.should_apply = False
+                applied_counter += 1
+                # Remove from the applicable products if target and
+                # applicable are the same product
+                if coupon.target == coupon.apply_on:
+                    applicable_products_without_discount.remove(item)
+
+                # Add discount to the product
+                if applicable_products_without_discount:
+                    discounted_product = applicable_products_without_discount.pop()
+                    discounted_product.should_apply = False
+                    discounted_product.coupon = coupon
+                    discounted_product.discount = MarketService.calculate_discount_amount(
+                        initial_price=discounted_product.product.price,
+                        discount_type=coupon.discount_type,
+                        number=coupon.discount,
+                    )
+
+            if coupon.limit > 0 and applied_counter == coupon.limit:
+                return
 
     @staticmethod
     def calculate_discount_amount(
@@ -102,12 +108,3 @@ class MarketService:
             if getattr(item, key) == value:
                 return item
         return None
-
-
-"""
-testcases
-ms.build_basket(basket_items=["CF1", "CF1", "CF1", "CF1", "CF1"])
-ms.build_basket(basket_items=["AP1", "AP1", "OM1", "AP1", "OM1"])
-ms.build_basket(basket_items=["AP1", "AP1", "OM1", "AP1", "OM1", "CF1", "CF1"])
-ms.build_basket(basket_items=["CH1", "MK1", "MK1", "CH1"])
-"""
