@@ -1,41 +1,53 @@
 # farmersmarket
 A checkout system for farmer's market
 
+## Installation
 
-## Application structure
+- Build image
+  ```
+  docker build -t farmersmarket .
+  ```
 
-It will have some cli commands also for accepting the inputs and printing 
-the receipt.
+- Run test cases
+  ```
+  docker run farmersmarket
 
-The cli and the business logic would be separate as I am planning to create
-a tiny web app with a database using flask and probably mongodb.
+  ```
+  ```
+  λ → docker run farmersmarket
+  .............                                                            [100%]
 
-For CLI We would be using Click as it's already integrated with Flask and we 
-could reuse some of that logic.
+  ----------- coverage: platform linux, python 3.7.5-final-0 -----------
+  Name                        Stmts   Miss  Cover
+  -----------------------------------------------
+  marketservice/__init__.py       0      0   100%
+  marketservice/models.py        35      0   100%
+  marketservice/seed.py           2      0   100%
+  marketservice/services.py      57      0   100%
+  -----------------------------------------------
+  TOTAL                          94      0   100%
 
-```
-    root
-        server/(tentative)
-        cli/
-        marketservice/
-        tests/
-    config
-    requirements.txt
-```
+  13 passed in 0.13s
+  ```
 
-## Code brainstorming
-    1. The input model adapter should accept databases, csv or manual seed
-    2. We would start with database design and implement those in models.
+- Run CLI
+  ```
+  docker run -it farmersmarket /bin/bash
+  ```
 
-        - Table Product
-            id name code price
-        - Table Coupon
-            id name description
-        - Table BasketItem
-            id product_id coupon_id discount
-
-    3. The marketservice application will have all the rules and logic to 
-        calulate the final price of each product and hence all products.
-
-
-
+  ```
+  λ → docker run -it farmersmarket /bin/bash
+  root@429cfc5f44c5:/farmersmarket# farmersmarket
+  Enter product codes: CF1 CF1 CH1 MK1
+  Item 		  Price
+  ---- 		  -----
+  CF1 		  11.23
+  CF1 		  11.23
+     BOGO 	 -11.23
+  CH1 		  3.11
+  MK1 		  4.75
+     CHMK 	 -4.75
+  ------------------------
+  Total: 		  14.34
+  root@429cfc5f44c5:/farmersmarket#
+  ```

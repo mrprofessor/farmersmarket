@@ -103,19 +103,6 @@ class MarketService:
                 return item
         return None
 
-    # FIXME
-    # remove the function
-    # def calculate_invoice(self, basket: Basket):
-    #     """ Calculate the final invoice """
-    #     if not basket:
-    #         print("No items yet")
-    #         return
-    #     for item in basket.basket_items:
-    #         print(item.product.code, "\t\t", "{:.2f}".format(item.product.price))
-    #         if item.coupon:
-    #             print("\t", item.coupon.name, "\t", "{:.2f}".format(-item.discount))
-    #     print("Total: ", "\t", "{:.2f}".format(basket.total()))
-
 
 """
 testcases
